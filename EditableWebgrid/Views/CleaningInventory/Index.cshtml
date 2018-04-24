@@ -1,0 +1,192 @@
+﻿@model List<EditableWebgrid.Models.CleaningInventoryModel>
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style type="text/css">
+    .edit-mode {}
+
+    .edit-inv {}
+
+    .edit-inv display-mode {}
+
+    .save-inv edit-mode {}
+
+    .display-mode {}
+
+    .cancel-inv {}
+
+    .webgrid-table {
+        font-family: Arial,Helvetica,sans-serif;
+        font-size: 14px;
+        font-weight: normal;
+        width: 700px;
+        display: table;
+        border-collapse: collapse;
+        border: solid 1px #C5C5C5;
+        background-color: white;
+    }
+
+   .webgrid-table td, th {
+        border: 1px solid #C5C5C5;
+        padding: 3px 7px 2px;
+    }
+
+    .webgrid-header, .webgrid-header a {
+        background-color: #B6391E;
+        color: white;
+        text-align: left;
+        text-decoration: none;
+    }
+
+    .webgrid-footer {
+    }
+
+    .webgrid-row-style {
+        padding: 3px 7px 2px;
+    }
+
+    .webgrid-alternating-row {
+        background-color: #F5F5F5;
+        padding: 3px 7px 2px;
+    }
+
+    .col1Width {
+        width: 50px;
+    }
+
+    .col2Width {
+        width: 200px;
+    }
+
+    .col3Width {
+        width: 250px;
+    }
+</style>
+
+<script type="text/javascript">
+    $(function () {
+
+        // edit mode hide
+        $('.edit-mode').hide();
+
+        //edit or cancel button click
+        $('.edit-item, .cancel-item').on('click', function () {
+            var tr = $(this).parents('tr:first');
+            tr.find('.edit-mode, .display-mode').toggle();
+        });
+
+        //save item button click
+        $('.save-item').on('click', function () {
+            var tr = $(this).parents('tr:first');
+            var ItemID = tr.find("#ItemID").val();
+            var Desc = tr.find("#Desc").val();
+            var Qty = tr.find("#Qty").val();
+            tr.find("#lblDesc").text(Desc);
+            tr.find("#lblQty").text(Qty);
+            tr.find('.edit-mode, .display-mode').toggle();
+            var CleaningInventoryModel =
+                {
+                    "ID": ItemID,
+                    "Description": Desc,
+                    "Qty (In Stock)": Qty
+                    //"User": User,
+                    //"Update": Date
+                };
+            $.ajax({
+                url: '/CleaningInventory/SaveItem/',
+                data: JSON.stringify(CleaningInventoryModel),
+                type: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    alert(data);
+                }
+            });
+
+        });
+
+        // add a new row
+        $('#btnAddNew').click(function () {
+
+            // new row has not been added
+            if ($('.add-item').length == 0) {
+                var newRow = $("<tr>");
+                newRow.append("<td><input type='text' id='Description-Add'/></td>");
+                newRow.append("<td><input type='text' id='Qty-Add'/></td>");
+                newRow.append("<td ><button class='add-item edit-mode' id='0'>Add</button>&nbsp;<button class='cancel-add-item edit-mode' id='0'>Cancel</button> </td>");
+                $('#gridContent tbody:first').prepend(newRow);
+            }
+
+            // new row has been added, and add button click
+            $('.add-item').on('click', function () {
+                var tr = $(this).parents('tr:first');
+                var ID = $(this).prop('id');
+                var Description = tr.find('#Description-Add').val();
+                var Qty = tr.find('#Qty-Add').val();
+
+                var CleaningInventoryModel =
+                    {
+                        "ID": ID,
+                        "Description": Description,
+                        "Qty (In Stock)": Qty
+                        //"User": User,
+                        //"Update": Date
+                    };
+
+                $.ajax({
+                    url: '/CleaningInventory/CreateItem/',
+                    data: JSON.stringify(CleaningInventoryModel),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    success: function (data) {
+                        alert(data);
+                    }
+                });
+                tr.remove();
+            });
+
+            // new row has been added, and cancel button click
+            $('.cancel-add-item').on('click', function () {
+                var tr = $(this).parents('tr:first');
+                tr.remove();
+            });
+        });
+    })
+</script>
+
+<h2>Inventory</h2>
+<h4><button id="btnAddNew">Add New (+)</button></h4>
+
+@{
+    var grid = new WebGrid(Model);
+}
+
+<div id="gridContent" style=" padding:20px; ">
+    @grid.GetHtml(
+                    tableStyle: "webgrid-table",
+                    headerStyle: "webgrid-header",
+                    footerStyle: "webgrid-footer",
+                    alternatingRowStyle: "webgrid-alternating-row",
+                    selectedRowStyle: "webgrid-selected-row",
+                    rowStyle: "webgrid-row-style",
+                    mode: WebGridPagerModes.All,
+         columns:
+                    grid.Columns(
+                         @*grid.Column("ID", format: @<text>  <span class="display-mode">@item.ID </span> <label id="ItemID" class="edit-mode">@item.ID</label> </text>, style: "col2Width"),*@
+                    grid.Column("Description", "Description", format: @<text>
+                        <span> <label id="lblDesc">@item.Description</label></span>
+                          </text>, style: "col2Width"),
+                    grid.Column("Qty", "Qty (In Stock)", format: @<text>
+                        <span class="display-mode">
+                              <label id="lblQty">@item.Qty</label>
+                        </span>
+                        <input type="text" id="Qty" value="@item.Qty" class="edit-mode" />
+                           </text>, style: "col2Width"),
+                    grid.Column("Action", format: @<text>
+                                        <button class="edit-item display-mode">Edit</button>
+                                        <button class="save-item edit-mode">Save</button>
+                                        <button class="cancel-item edit-mode">Cancel</button>
+                           </text>, style: "col3Width", canSort: false)
+               ))
+</div>
